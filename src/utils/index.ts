@@ -68,3 +68,6 @@ export const calculateDistance = (
 const toRadians = (degrees: number): number => {
   return degrees * (Math.PI / 180);
 };
+
+// Export map utilities
+export * from './mapUtils';

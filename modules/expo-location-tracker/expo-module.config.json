@@ -1,0 +1,9 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": {
+    "modules": ["ExpoLocationTrackerModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.locationtracker.ExpoLocationTrackerModule"]
+  }
+}

@@ -13,7 +13,16 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "TrailRun needs location access to track your running routes and record GPS data during your trail runs.",
+        "NSLocationWhenInUseUsageDescription": "TrailRun needs location access to track your running routes and record GPS data during your trail runs.",
+        "NSLocationAlwaysUsageDescription": "TrailRun needs background location access to continue tracking your route even when the app is not in the foreground.",
+        "NSCameraUsageDescription": "TrailRun needs camera access to capture photos during your trail runs and geotag them with your current location.",
+        "NSPhotoLibraryUsageDescription": "TrailRun needs photo library access to save captured photos and access existing photos for your trail activities.",
+        "NSPhotoLibraryAddUsageDescription": "TrailRun needs permission to save photos you capture during trail runs to your photo library.",
+        "UIBackgroundModes": ["location"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,10 +30,53 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "WAKE_LOCK",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "TrailRun needs location access to track your running routes and record GPS data during your trail runs.",
+          "locationAlwaysPermission": "TrailRun needs background location access to continue tracking your route even when the app is not in the foreground.",
+          "locationWhenInUsePermission": "TrailRun needs location access to track your running routes and record GPS data during your trail runs."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "TrailRun needs camera access to capture photos during your trail runs and geotag them with your current location."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "TrailRun needs photo library access to save captured photos and access existing photos for your trail activities.",
+          "savePhotosPermission": "TrailRun needs permission to save photos you capture during trail runs to your photo library.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ],
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsImpl": "mapbox",
+          "RNMapboxMapsDownloadToken": "YOUR_MAPBOX_DOWNLOAD_TOKEN"
+        }
+      ]
+    ]
   }
 }

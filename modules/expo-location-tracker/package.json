@@ -1,0 +1,30 @@
+{
+  "name": "expo-location-tracker",
+  "version": "1.0.0",
+  "description": "Native GPS tracking module for TrailRun app",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "build": "expo-module build",
+    "clean": "expo-module clean",
+    "lint": "expo-module lint",
+    "test": "expo-module test"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "location",
+    "gps",
+    "tracking"
+  ],
+  "repository": "https://github.com/expo/expo",
+  "author": "TrailRun Team",
+  "license": "MIT",
+  "homepage": "https://docs.expo.dev/modules/",
+  "devDependencies": {
+    "expo-module-scripts": "^3.0.0"
+  },
+  "peerDependencies": {
+    "expo": "*"
+  }
+}

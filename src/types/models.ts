@@ -99,11 +99,11 @@ export const validatePhoto = (photo: Partial<Photo>): void => {
     throw new ValidationError('timestamp', photo.timestamp, 'must be a valid Date');
   }
   
-  if (!validateLatitude(photo.latitude || NaN)) {
+  if (photo.latitude === undefined || !validateLatitude(photo.latitude)) {
     throw new ValidationError('latitude', photo.latitude, 'must be a valid latitude (-90 to 90)');
   }
   
-  if (!validateLongitude(photo.longitude || NaN)) {
+  if (photo.longitude === undefined || !validateLongitude(photo.longitude)) {
     throw new ValidationError('longitude', photo.longitude, 'must be a valid longitude (-180 to 180)');
   }
   
@@ -113,15 +113,15 @@ export const validatePhoto = (photo: Partial<Photo>): void => {
 };
 
 export const validateTrackPoint = (trackPoint: Partial<TrackPoint>): void => {
-  if (!validateLatitude(trackPoint.latitude || NaN)) {
+  if (trackPoint.latitude === undefined || !validateLatitude(trackPoint.latitude)) {
     throw new ValidationError('latitude', trackPoint.latitude, 'must be a valid latitude (-90 to 90)');
   }
   
-  if (!validateLongitude(trackPoint.longitude || NaN)) {
+  if (trackPoint.longitude === undefined || !validateLongitude(trackPoint.longitude)) {
     throw new ValidationError('longitude', trackPoint.longitude, 'must be a valid longitude (-180 to 180)');
   }
   
-  if (!validateAccuracy(trackPoint.accuracy || NaN)) {
+  if (trackPoint.accuracy === undefined || !validateAccuracy(trackPoint.accuracy)) {
     throw new ValidationError('accuracy', trackPoint.accuracy, 'must be a non-negative number');
   }
   

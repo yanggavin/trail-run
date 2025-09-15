@@ -1,20 +1,16 @@
 // Service interfaces - implementations will be added in later tasks
 
-export interface LocationService {
-  startTracking(config: TrackingConfig): Promise<void>;
-  stopTracking(): Promise<Activity>;
-  pauseTracking(): void;
-  resumeTracking(): void;
-  getCurrentLocation(): Promise<Location>;
-  getTrackingStatus(): TrackingStatus;
-}
+// LocationService implementation
+export { LocationService, locationService } from './location';
+export type {
+  Location as LocationData,
+  LocationConfig,
+  LocationServiceConfig,
+  PermissionStatus,
+  TrackingStatus as LocationTrackingStatus,
+} from './location';
 
-export interface PhotoService {
-  capturePhoto(location: Location): Promise<Photo>;
-  getPhotosForActivity(activityId: string): Promise<Photo[]>;
-  generateThumbnail(photoUri: string): Promise<string>;
-  stripExifData(photoUri: string): Promise<string>;
-}
+// PhotoService is now implemented - see photo services exports below
 
 export interface ActivityService {
   createActivity(): Promise<Activity>;
@@ -81,3 +77,21 @@ export type {
   TrackPointFilters, 
   TrackPointBatch 
 } from './repositories';
+
+// Photo services
+export { 
+  CameraPermissionService, 
+  CameraConfigService,
+  PhotoService,
+  PhotoStorageService 
+} from './photo';
+
+export type { 
+  PermissionStatus as CameraPermissionStatus, 
+  CameraConfig, 
+  OptimalCameraSettings,
+  PhotoCaptureOptions,
+  PhotoCaptureResult,
+  PhotoStorageStats,
+  BatchOperationResult 
+} from './photo';
