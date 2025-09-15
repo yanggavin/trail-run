@@ -107,8 +107,12 @@ export const validatePhoto = (photo: Partial<Photo>): void => {
     throw new ValidationError('longitude', photo.longitude, 'must be a valid longitude (-180 to 180)');
   }
   
-  if (!photo.localUri || typeof photo.localUri !== 'string') {
-    throw new ValidationError('localUri', photo.localUri, 'must be a non-empty string');
+  if (!photo.uri || typeof photo.uri !== 'string') {
+    throw new ValidationError('uri', photo.uri, 'must be a non-empty string');
+  }
+  
+  if (!photo.createdAt || !(photo.createdAt instanceof Date)) {
+    throw new ValidationError('createdAt', photo.createdAt, 'must be a valid Date');
   }
 };
 
@@ -181,19 +185,21 @@ export const createPhoto = (params: {
   activityId: string;
   latitude: number;
   longitude: number;
-  localUri: string;
+  uri: string;
   timestamp?: Date;
   exifData?: ExifData;
 }): Photo => {
+  const now = new Date();
   const photo: Photo = {
     photoId: params.photoId,
     activityId: params.activityId,
-    timestamp: params.timestamp || new Date(),
+    timestamp: params.timestamp || now,
     latitude: params.latitude,
     longitude: params.longitude,
-    localUri: params.localUri,
+    uri: params.uri,
     exifData: params.exifData,
-    syncStatus: 'local'
+    syncStatus: 'local',
+    createdAt: now
   };
   
   validatePhoto(photo);
@@ -282,12 +288,15 @@ export const photoToApiFormat = (photo: Photo): PhotoApiFormat => {
     timestamp: photo.timestamp.toISOString(),
     latitude: photo.latitude,
     longitude: photo.longitude,
-    local_uri: photo.localUri,
-    cloud_uri: photo.cloudUri,
+    uri: photo.uri,
     thumbnail_uri: photo.thumbnailUri,
+    cloud_url: photo.cloudUrl,
+    thumbnail_cloud_url: photo.thumbnailCloudUrl,
     exif_data: photo.exifData ? JSON.stringify(photo.exifData) : undefined,
     caption: photo.caption,
-    sync_status: photo.syncStatus
+    uploaded_at: photo.uploadedAt?.toISOString(),
+    sync_status: photo.syncStatus,
+    created_at: photo.createdAt.toISOString()
   };
 };
 
@@ -298,12 +307,15 @@ export const photoFromApiFormat = (apiPhoto: PhotoApiFormat): Photo => {
     timestamp: new Date(apiPhoto.timestamp),
     latitude: apiPhoto.latitude,
     longitude: apiPhoto.longitude,
-    localUri: apiPhoto.local_uri,
-    cloudUri: apiPhoto.cloud_uri,
+    uri: apiPhoto.uri,
     thumbnailUri: apiPhoto.thumbnail_uri,
+    cloudUrl: apiPhoto.cloud_url,
+    thumbnailCloudUrl: apiPhoto.thumbnail_cloud_url,
     exifData: apiPhoto.exif_data ? JSON.parse(apiPhoto.exif_data) : undefined,
     caption: apiPhoto.caption,
-    syncStatus: apiPhoto.sync_status as Photo['syncStatus']
+    uploadedAt: apiPhoto.uploaded_at ? new Date(apiPhoto.uploaded_at) : undefined,
+    syncStatus: apiPhoto.sync_status as Photo['syncStatus'],
+    createdAt: new Date(apiPhoto.created_at)
   };
   
   validatePhoto(photo);
@@ -372,5 +384,5 @@ export const isActivityComplete = (activity: Activity): boolean => {
 };
 
 export const isPhotoSynced = (photo: Photo): boolean => {
-  return photo.syncStatus === 'synced' && !!photo.cloudUri;
+  return photo.syncStatus === 'synced' && !!photo.cloudUrl;
 };

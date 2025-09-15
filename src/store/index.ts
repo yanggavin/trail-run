@@ -334,9 +334,24 @@ export const useAppStore = create<AppState>()(
           } : null,
         };
 
-        // In a real app, this would use AsyncStorage or similar
-        if (typeof window !== 'undefined' && window.localStorage) {
-          window.localStorage.setItem('trailrun_tracking_state', JSON.stringify(persistedState));
+        // Use AsyncStorage for React Native
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          await AsyncStorage.setItem('trailrun_tracking_state', JSON.stringify(persistedState));
+        } catch (asyncStorageError) {
+          // Fallback to localStorage for web/testing
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem('trailrun_tracking_state', JSON.stringify(persistedState));
+          }
+        }
+
+        // Also notify app lifecycle service for crash recovery
+        try {
+          const { appLifecycleService } = await import('../services/background/AppLifecycleService');
+          await appLifecycleService.saveTrackingStateForRecovery();
+        } catch (lifecycleError) {
+          // Ignore lifecycle service errors to avoid breaking the main save operation
+          console.warn('Failed to save state for crash recovery:', lifecycleError);
         }
       } catch (error) {
         console.error('Failed to save tracking state:', error);
@@ -345,39 +360,47 @@ export const useAppStore = create<AppState>()(
 
     restoreTrackingState: async () => {
       try {
-        // In a real app, this would use AsyncStorage or similar
-        if (typeof window !== 'undefined' && window.localStorage) {
-          const savedState = window.localStorage.getItem('trailrun_tracking_state');
+        let savedState: string | null = null;
+
+        // Try AsyncStorage first (React Native)
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          savedState = await AsyncStorage.getItem('trailrun_tracking_state');
+        } catch (asyncStorageError) {
+          // Fallback to localStorage for web/testing
+          if (typeof window !== 'undefined' && window.localStorage) {
+            savedState = window.localStorage.getItem('trailrun_tracking_state');
+          }
+        }
+        
+        if (savedState) {
+          const parsedState = JSON.parse(savedState);
           
-          if (savedState) {
-            const parsedState = JSON.parse(savedState);
-            
-            // Convert ISO strings back to dates
-            const restoredState: TrackingState = {
-              ...parsedState,
-              activity: parsedState.activity ? {
-                ...parsedState.activity,
-                startedAt: new Date(parsedState.activity.startedAt),
-                endedAt: parsedState.activity.endedAt ? new Date(parsedState.activity.endedAt) : undefined,
-                createdAt: new Date(parsedState.activity.createdAt),
-                updatedAt: new Date(parsedState.activity.updatedAt),
-              } : null,
-              trackPoints: parsedState.trackPoints.map((point: any) => ({
-                ...point,
-                timestamp: new Date(point.timestamp),
-              })),
-              lastLocation: parsedState.lastLocation ? {
-                ...parsedState.lastLocation,
-                timestamp: new Date(parsedState.lastLocation.timestamp),
-              } : null,
-            };
+          // Convert ISO strings back to dates
+          const restoredState: TrackingState = {
+            ...parsedState,
+            activity: parsedState.activity ? {
+              ...parsedState.activity,
+              startedAt: new Date(parsedState.activity.startedAt),
+              endedAt: parsedState.activity.endedAt ? new Date(parsedState.activity.endedAt) : undefined,
+              createdAt: new Date(parsedState.activity.createdAt),
+              updatedAt: new Date(parsedState.activity.updatedAt),
+            } : null,
+            trackPoints: parsedState.trackPoints.map((point: any) => ({
+              ...point,
+              timestamp: new Date(point.timestamp),
+            })),
+            lastLocation: parsedState.lastLocation ? {
+              ...parsedState.lastLocation,
+              timestamp: new Date(parsedState.lastLocation.timestamp),
+            } : null,
+          };
 
-            set({ tracking: restoredState });
+          set({ tracking: restoredState });
 
-            // Resume auto-pause monitoring if tracking was active
-            if (restoredState.status === 'active') {
-              autoPauseService.startMonitoring();
-            }
+          // Resume auto-pause monitoring if tracking was active
+          if (restoredState.status === 'active') {
+            autoPauseService.startMonitoring();
           }
         }
       } catch (error) {

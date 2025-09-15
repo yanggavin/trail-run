@@ -40,12 +40,15 @@ export interface Photo {
   timestamp: Date;
   latitude: number;
   longitude: number;
-  localUri: string;
-  cloudUri?: string;
-  thumbnailUri?: string;
+  uri: string; // Local file URI
+  thumbnailUri?: string; // Local thumbnail URI
+  cloudUrl?: string; // Cloud storage key/path
+  thumbnailCloudUrl?: string; // Cloud thumbnail key/path
   exifData?: ExifData;
   caption?: string;
+  uploadedAt?: Date;
   syncStatus: 'local' | 'uploading' | 'synced';
+  createdAt: Date;
 }
 
 // API/Database format interfaces for data transformation
@@ -76,12 +79,15 @@ export interface PhotoApiFormat {
   timestamp: string; // ISO string
   latitude: number;
   longitude: number;
-  local_uri: string;
-  cloud_uri?: string;
+  uri: string;
   thumbnail_uri?: string;
+  cloud_url?: string;
+  thumbnail_cloud_url?: string;
   exif_data?: string; // JSON string
   caption?: string;
+  uploaded_at?: string; // ISO string
   sync_status: string;
+  created_at: string; // ISO string
 }
 
 export interface TrackPointApiFormat {
@@ -147,3 +153,4 @@ export type PermissionStatus =
 
 // Re-export model utilities
 export * from './models';
+export * from './auth';

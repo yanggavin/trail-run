@@ -15,6 +15,9 @@ public class ExpoLocationTrackerModule: Module, CLLocationManagerDelegate {
   private let bufferSize = 5
   private var lastValidLocation: CLLocation?
   
+  // Background task management
+  private var backgroundTaskIdentifier: UIBackgroundTaskIdentifier = .invalid
+  
   public func definition() -> ModuleDefinition {
     Name("ExpoLocationTracker")
     
@@ -47,6 +50,14 @@ public class ExpoLocationTrackerModule: Module, CLLocationManagerDelegate {
     AsyncFunction("getTrackingStatus") { () -> [String: Any] in
       return self.getTrackingStatus()
     }
+    
+    OnAppEntersBackground {
+      self.handleAppEntersBackground()
+    }
+    
+    OnAppEntersForeground {
+      self.handleAppEntersForeground()
+    }
   }
   
   // MARK: - Public Methods
@@ -77,7 +88,10 @@ public class ExpoLocationTrackerModule: Module, CLLocationManagerDelegate {
   private func stopLocationUpdates() async throws {
     await MainActor.run {
       self.locationManager?.stopUpdatingLocation()
+      self.locationManager?.stopMonitoringSignificantLocationChanges()
       self.locationManager?.allowsBackgroundLocationUpdates = false
+      
+      self.endBackgroundTask()
       
       self.isTracking = false
       self.isPaused = false
@@ -286,6 +300,49 @@ public class ExpoLocationTrackerModule: Module, CLLocationManagerDelegate {
   
   private func sendTrackingStatusUpdate() {
     sendEvent("onTrackingStatusChange", getTrackingStatus())
+  }
+  
+  // MARK: - Background Handling
+  
+  private func handleAppEntersBackground() {
+    guard isTracking else { return }
+    
+    // Start background task to continue location updates
+    startBackgroundTask()
+    
+    // Switch to significant location changes for better battery life
+    if let locationManager = locationManager, currentConfig?.backgroundTracking == true {
+      locationManager.startMonitoringSignificantLocationChanges()
+    }
+  }
+  
+  private func handleAppEntersForeground() {
+    guard isTracking else { return }
+    
+    // End background task
+    endBackgroundTask()
+    
+    // Resume normal location updates
+    if let locationManager = locationManager {
+      locationManager.stopMonitoringSignificantLocationChanges()
+      locationManager.startUpdatingLocation()
+    }
+  }
+  
+  private func startBackgroundTask() {
+    guard backgroundTaskIdentifier == .invalid else { return }
+    
+    backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "LocationTracking") {
+      // Background task is about to expire
+      self.endBackgroundTask()
+    }
+  }
+  
+  private func endBackgroundTask() {
+    guard backgroundTaskIdentifier != .invalid else { return }
+    
+    UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
+    backgroundTaskIdentifier = .invalid
   }
   
   // MARK: - CLLocationManagerDelegate

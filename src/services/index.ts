@@ -95,3 +95,59 @@ export type {
   PhotoStorageStats,
   BatchOperationResult 
 } from './photo';
+
+// Activity services
+export { 
+  ActivityStatisticsService, 
+  activityStatisticsService,
+  CoverPhotoSelectionService,
+  coverPhotoSelectionService,
+  ShareableContentService,
+  shareableContentService,
+  ActivitySharingService
+} from './activity';
+
+export type { 
+  ActivityStatistics, 
+  StatisticsCalculationOptions,
+  PhotoQualityMetrics,
+  CoverPhotoCandidate,
+  CoverPhotoSelectionOptions,
+  ShareableImageOptions,
+  PhotoCollageOptions,
+  ShareableImageResult,
+  PhotoCollageResult,
+  ExportOptions,
+  ExportResult
+} from './activity';
+
+export type {
+  ShareOptions,
+  ShareResult
+} from './activity/ActivitySharingService';
+
+// History services
+export { HistoryService } from './history';
+export type { 
+  HistoryFilters, 
+  ActivityWithCoverPhoto, 
+  HistoryResult, 
+  PaginationParams as HistoryPaginationParams 
+} from './history';
+
+// Background services
+export { 
+  BackgroundTaskService, 
+  backgroundTaskService,
+  AppLifecycleService,
+  appLifecycleService 
+} from './background';
+
+export type { 
+  BackgroundTaskConfig, 
+  BackgroundTaskStatus, 
+  AppLifecycleState as BackgroundAppLifecycleState,
+  AppLifecycleConfig,
+  TrackingRecoveryData,
+  AppCrashInfo 
+} from './background';

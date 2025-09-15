@@ -9,16 +9,20 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
+  ActionSheetIOS,
+  Platform,
 } from 'react-native';
 import { Activity, Photo, TrackPoint } from '../../types';
 import { ActivityRepository } from '../../services/repositories/ActivityRepository';
 import { PhotoRepository } from '../../services/repositories/PhotoRepository';
 import { DatabaseService } from '../../services/database/DatabaseService';
 import { TrackPointRepository } from '../../services/repositories/TrackPointRepository';
+import { ActivitySharingService } from '../../services/activity/ActivitySharingService';
 import StatsCard from '../../components/stats/StatsCard';
 import MapView from '../../components/map/MapView';
 import PhotoGallery from '../../components/photo/PhotoGallery';
 import ElevationChart from '../../components/common/ElevationChart';
+import ActivityEditModal from '../../components/activity/ActivityEditModal';
 
 interface ActivityDetailScreenProps {
   route?: {
@@ -36,6 +40,8 @@ const ActivityDetailScreen: React.FC<ActivityDetailScreenProps> = ({ route, navi
   const [trackPoints, setTrackPoints] = useState<TrackPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [sharing, setSharing] = useState(false);
   
   const [activityRepository] = useState(() => {
     const db = new DatabaseService();
@@ -48,6 +54,9 @@ const ActivityDetailScreen: React.FC<ActivityDetailScreenProps> = ({ route, navi
   const [trackPointRepository] = useState(() => {
     const db = new DatabaseService();
     return new TrackPointRepository(db);
+  });
+  const [activitySharingService] = useState(() => {
+    return new ActivitySharingService();
   });
 
   // Get activity ID from route params or use demo data
@@ -110,11 +119,106 @@ const ActivityDetailScreen: React.FC<ActivityDetailScreenProps> = ({ route, navi
   };
 
   const handleShare = () => {
-    Alert.alert('Share', 'Sharing functionality will be implemented in task 8.3');
+    if (!activity) return;
+
+    const shareOptions = [
+      'Share Activity',
+      'Share to Instagram',
+      'Share to Facebook', 
+      'Share to Twitter',
+      'Share to Strava',
+      'Cancel',
+    ];
+
+    const showActionSheet = () => {
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: shareOptions,
+            cancelButtonIndex: shareOptions.length - 1,
+            title: 'Share Activity',
+          },
+          (buttonIndex) => {
+            handleShareOption(buttonIndex);
+          }
+        );
+      } else {
+        // For Android, show a simple alert with options
+        Alert.alert(
+          'Share Activity',
+          'Choose sharing option',
+          [
+            { text: 'General Share', onPress: () => handleShareOption(0) },
+            { text: 'Instagram', onPress: () => handleShareOption(1) },
+            { text: 'Facebook', onPress: () => handleShareOption(2) },
+            { text: 'Twitter', onPress: () => handleShareOption(3) },
+            { text: 'Strava', onPress: () => handleShareOption(4) },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      }
+    };
+
+    const handleShareOption = async (buttonIndex: number) => {
+      if (buttonIndex === shareOptions.length - 1) return; // Cancel
+
+      setSharing(true);
+      try {
+        let result;
+        
+        switch (buttonIndex) {
+          case 0: // General share
+            result = await activitySharingService.shareActivity(activity, photos);
+            break;
+          case 1: // Instagram
+            result = await activitySharingService.shareToSocialMedia(activity, 'instagram', photos);
+            break;
+          case 2: // Facebook
+            result = await activitySharingService.shareToSocialMedia(activity, 'facebook');
+            break;
+          case 3: // Twitter
+            result = await activitySharingService.shareToSocialMedia(activity, 'twitter');
+            break;
+          case 4: // Strava
+            result = await activitySharingService.shareToSocialMedia(activity, 'strava');
+            break;
+          default:
+            return;
+        }
+
+        if (result.success) {
+          Alert.alert('Success', result.message);
+        } else {
+          Alert.alert('Error', result.error);
+        }
+      } catch (error) {
+        console.error('Error sharing activity:', error);
+        Alert.alert('Error', 'Failed to share activity. Please try again.');
+      } finally {
+        setSharing(false);
+      }
+    };
+
+    showActionSheet();
   };
 
   const handleEdit = () => {
-    Alert.alert('Edit', 'Activity editing functionality will be implemented in task 9.3');
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async (updates: Partial<Activity>) => {
+    if (!activity) return;
+
+    try {
+      const updatedActivity = await activityRepository.update(activity.activityId, updates);
+      if (updatedActivity) {
+        setActivity(updatedActivity);
+        Alert.alert('Success', 'Activity updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating activity:', error);
+      throw error; // Re-throw to let the modal handle it
+    }
   };
 
   const handleDelete = () => {
@@ -128,10 +232,23 @@ const ActivityDetailScreen: React.FC<ActivityDetailScreenProps> = ({ route, navi
           style: 'destructive',
           onPress: async () => {
             try {
+              // Delete associated photos first
+              for (const photo of photos) {
+                await photoRepository.delete(photo.photoId);
+              }
+              
+              // Delete track points
+              await trackPointRepository.deleteByActivityId(activityId);
+              
+              // Delete the activity
               await activityRepository.delete(activityId);
-              navigation?.goBack();
+              
+              Alert.alert('Success', 'Activity deleted successfully', [
+                { text: 'OK', onPress: () => navigation?.goBack() }
+              ]);
             } catch (error) {
-              Alert.alert('Error', 'Failed to delete activity');
+              console.error('Error deleting activity:', error);
+              Alert.alert('Error', 'Failed to delete activity. Please try again.');
             }
           },
         },
@@ -252,8 +369,14 @@ const ActivityDetailScreen: React.FC<ActivityDetailScreenProps> = ({ route, navi
         </TouchableOpacity>
         
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-            <Text style={styles.actionButtonText}>Share</Text>
+          <TouchableOpacity 
+            style={styles.actionButton} 
+            onPress={handleShare}
+            disabled={sharing}
+          >
+            <Text style={[styles.actionButtonText, sharing && styles.disabledText]}>
+              {sharing ? 'Sharing...' : 'Share'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={handleEdit}>
             <Text style={styles.actionButtonText}>Edit</Text>
@@ -342,6 +465,16 @@ const ActivityDetailScreen: React.FC<ActivityDetailScreenProps> = ({ route, navi
         {/* Splits table */}
         {renderSplitsTable()}
       </ScrollView>
+
+      {/* Edit Modal */}
+      {activity && (
+        <ActivityEditModal
+          visible={showEditModal}
+          activity={activity}
+          onSave={handleSaveEdit}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -467,6 +600,9 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#d32f2f',
+  },
+  disabledText: {
+    opacity: 0.5,
   },
   scrollView: {
     flex: 1,
