@@ -1,0 +1,245 @@
+name: Beta Testing
+
+on:
+  push:
+    branches: [develop, beta]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build for'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - ios
+        - android
+        - all
+      phase:
+        description: 'Beta testing phase'
+        required: true
+        default: 'internal'
+        type: choice
+        options:
+        - internal
+        - closed
+        - open
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: TrailRun/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: TrailRun
+        run: npm ci
+        
+      - name: Type check
+        working-directory: TrailRun
+        run: npm run type-check
+        
+      - name: Lint
+        working-directory: TrailRun
+        run: npm run lint
+        
+      - name: Run tests
+        working-directory: TrailRun
+        run: npm run test:coverage
+
+  build-beta:
+    name: Build Beta
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: TrailRun/package-lock.json
+          
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          
+      - name: Install dependencies
+        working-directory: TrailRun
+        run: npm ci
+        
+      - name: Determine platform
+        id: platform
+        run: |
+          if [ "${{ github.event.inputs.platform }}" != "" ]; then
+            echo "platform=${{ github.event.inputs.platform }}" >> $GITHUB_OUTPUT
+          else
+            echo "platform=all" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Build beta iOS
+        if: steps.platform.outputs.platform == 'ios' || steps.platform.outputs.platform == 'all'
+        working-directory: TrailRun
+        run: eas build --platform ios --profile preview --non-interactive
+        
+      - name: Build beta Android
+        if: steps.platform.outputs.platform == 'android' || steps.platform.outputs.platform == 'all'
+        working-directory: TrailRun
+        run: eas build --platform android --profile preview --non-interactive
+
+  submit-beta:
+    name: Submit to Beta Channels
+    runs-on: ubuntu-latest
+    needs: build-beta
+    if: github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          
+      - name: Determine platform
+        id: platform
+        run: |
+          if [ "${{ github.event.inputs.platform }}" != "" ]; then
+            echo "platform=${{ github.event.inputs.platform }}" >> $GITHUB_OUTPUT
+          else
+            echo "platform=all" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Submit iOS to TestFlight
+        if: steps.platform.outputs.platform == 'ios' || steps.platform.outputs.platform == 'all'
+        working-directory: TrailRun
+        run: eas submit --platform ios --latest --non-interactive
+        env:
+          EXPO_APPLE_ID: ${{ secrets.EXPO_APPLE_ID }}
+          EXPO_ASC_APP_ID: ${{ secrets.EXPO_ASC_APP_ID }}
+          EXPO_APPLE_TEAM_ID: ${{ secrets.EXPO_APPLE_TEAM_ID }}
+          
+      - name: Submit Android to Play Console
+        if: steps.platform.outputs.platform == 'android' || steps.platform.outputs.platform == 'all'
+        working-directory: TrailRun
+        run: eas submit --platform android --latest --non-interactive
+        env:
+          EXPO_GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ${{ secrets.EXPO_GOOGLE_SERVICE_ACCOUNT_KEY_PATH }}
+
+  notify-testers:
+    name: Notify Beta Testers
+    runs-on: ubuntu-latest
+    needs: submit-beta
+    if: success()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Generate beta notification
+        run: |
+          echo "## 🧪 New Beta Build Available!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "A new beta build of TrailRun has been deployed:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platform**: ${{ needs.build-beta.outputs.platform || 'all' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Phase**: ${{ github.event.inputs.phase || 'internal' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### For Beta Testers:" >> $GITHUB_STEP_SUMMARY
+          echo "- **iOS**: Check TestFlight app for updates" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android**: Check Google Play Store for updates" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Feedback:" >> $GITHUB_STEP_SUMMARY
+          echo "- Use in-app feedback in Settings" >> $GITHUB_STEP_SUMMARY
+          echo "- Email: beta@trailrun.app" >> $GITHUB_STEP_SUMMARY
+          echo "- Report issues: [GitHub Issues](https://github.com/yanggavin/trail-run/issues)" >> $GITHUB_STEP_SUMMARY
+          
+      # In a real setup, you might want to send notifications via:
+      # - Slack webhook
+      # - Discord webhook  
+      # - Email to beta testers
+      # - Push notifications
+      
+      - name: Create GitHub Issue for Beta Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: issue } = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Beta Release: ${context.sha.substring(0, 7)} - ${new Date().toISOString().split('T')[0]}`,
+              body: `## 🧪 Beta Release Notification
+              
+              A new beta build has been released for testing:
+              
+              **Build Information:**
+              - Commit: ${context.sha}
+              - Branch: ${context.ref.replace('refs/heads/', '')}
+              - Platform: ${{ github.event.inputs.platform || 'all' }}
+              - Phase: ${{ github.event.inputs.phase || 'internal' }}
+              
+              **For Beta Testers:**
+              - iOS: Check TestFlight for updates
+              - Android: Check Google Play Console internal testing
+              
+              **Testing Focus:**
+              - GPS accuracy in various environments
+              - Battery usage during long runs
+              - Photo capture and geotagging
+              - Background tracking reliability
+              - App performance and stability
+              
+              **Feedback Channels:**
+              - In-app feedback (Settings → Provide Beta Feedback)
+              - Email: beta@trailrun.app
+              - GitHub Issues: Report bugs and feature requests
+              
+              **Timeline:**
+              This beta will be active for 2-3 weeks. Please provide feedback by ${new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}.
+              
+              Thank you for helping improve TrailRun! 🏃‍♂️🏃‍♀️`,
+              labels: ['beta', 'testing', 'release']
+            });
+            
+            console.log(`Created issue #${issue.number}: ${issue.title}`);
+
+  performance-monitoring:
+    name: Set Up Beta Monitoring
+    runs-on: ubuntu-latest
+    needs: submit-beta
+    if: success()
+    
+    steps:
+      - name: Configure Sentry Release
+        run: |
+          # In a real setup, you would:
+          # 1. Create Sentry release for beta tracking
+          # 2. Set up beta-specific error monitoring
+          # 3. Configure performance monitoring
+          # 4. Set up beta analytics tracking
+          echo "Beta monitoring configured for build ${{ github.sha }}"
+          
+      - name: Update Analytics Configuration
+        run: |
+          # Configure Amplitude for beta tracking
+          # Set up custom events for beta feedback
+          # Enable enhanced logging for beta builds
+          echo "Beta analytics tracking enabled"

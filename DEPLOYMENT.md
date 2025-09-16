@@ -78,17 +78,30 @@ Where environment is one of: `development`, `preview`, `production`
 
 ## App Store Submission
 
+### Quick Reference
+For detailed step-by-step instructions, see:
+- **[Complete App Store Guide](./APP_STORE_DEPLOYMENT.md)** - Comprehensive deployment instructions
+- **[Deployment Checklist](./DEPLOYMENT_CHECKLIST.md)** - Quick reference checklist
+
 ### iOS App Store
 
-1. Builds are automatically submitted via EAS Submit
-2. Review submission in App Store Connect
-3. Submit for App Store review
+1. **Prerequisites**: Apple Developer Account ($99/year)
+2. **Build**: `eas build --platform ios --profile production`
+3. **Submit**: `eas submit --platform ios --latest`
+4. **Review**: Complete App Store Connect metadata and submit for review
 
 ### Google Play Store
 
-1. Builds are automatically uploaded to internal testing
-2. Promote to production in Google Play Console
-3. Submit for Google Play review
+1. **Prerequisites**: Google Play Console Account ($25 one-time)
+2. **Build**: `eas build --platform android --profile production`
+3. **Submit**: `eas submit --platform android --latest`
+4. **Review**: Complete Play Console store listing and submit for review
+
+### Store Assets
+Generate required screenshots and graphics:
+```bash
+./scripts/generate-store-assets.sh
+```
 
 ## Monitoring
 
@@ -97,6 +110,28 @@ Where environment is one of: `development`, `preview`, `production`
 - **Code Quality**: SonarCloud dashboard
 - **Build Status**: GitHub Actions
 
+## Beta Testing
+
+Before production release, run comprehensive beta testing:
+
+### Quick Beta Deployment
+```bash
+# Deploy to beta channels
+./scripts/deploy-beta.sh all internal
+
+# Or use GitHub Actions
+# Push to 'develop' branch or trigger workflow manually
+```
+
+### Beta Testing Phases
+1. **Internal Testing** (1-2 weeks) - Team and close contacts
+2. **Closed Beta** (2-3 weeks) - Invited trail runners  
+3. **Open Beta** (1-2 weeks) - Public TestFlight/Play Console
+4. **Release Candidate** (1 week) - Final validation
+
+For detailed beta testing instructions, see:
+- **[Beta Testing Guide](./BETA_TESTING_GUIDE.md)** - Complete beta testing workflow
+
 ## Troubleshooting
 
 ### Common Issues
@@ -104,6 +139,7 @@ Where environment is one of: `development`, `preview`, `production`
 1. **Build Failures**: Check EAS build logs
 2. **Submission Failures**: Verify app store credentials
 3. **Test Failures**: Run tests locally first
+4. **Beta Issues**: Check TestFlight/Play Console status
 
 ### Support
 
@@ -111,3 +147,4 @@ For deployment issues, check:
 1. EAS documentation: https://docs.expo.dev/eas/
 2. GitHub Actions logs
 3. Project issue tracker
+4. Beta testing feedback channels

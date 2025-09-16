@@ -9,10 +9,15 @@ import {
   Alert,
 } from 'react-native';
 import { PrivacyPolicyModal, TermsOfServiceModal } from '../../components/legal';
+import { BetaFeedbackModal } from '../../components/beta';
 
 const SettingsScreen: React.FC = () => {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfService, setShowTermsOfService] = useState(false);
+  const [showBetaFeedback, setShowBetaFeedback] = useState(false);
+  
+  // Check if this is a beta build (in production, this would be from environment)
+  const isBetaBuild = __DEV__ || process.env.NODE_ENV === 'beta';
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -74,6 +79,20 @@ const SettingsScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
+        {isBetaBuild && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Beta Testing</Text>
+            
+            <TouchableOpacity 
+              style={styles.settingItem}
+              onPress={() => setShowBetaFeedback(true)}
+            >
+              <Text style={styles.settingText}>Provide Beta Feedback</Text>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data Management</Text>
           
@@ -112,6 +131,13 @@ const SettingsScreen: React.FC = () => {
         visible={showTermsOfService}
         onClose={() => setShowTermsOfService(false)}
       />
+
+      {isBetaBuild && (
+        <BetaFeedbackModal
+          visible={showBetaFeedback}
+          onClose={() => setShowBetaFeedback(false)}
+        />
+      )}
     </SafeAreaView>
   );
 };
