@@ -1,36 +1,81 @@
 {
   "expo": {
     "name": "TrailRun",
-    "slug": "TrailRun",
+    "slug": "trailrun",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "scheme": "trailrun",
+    "description": "GPS tracking app for trail runners with photo capture and route analysis",
+    "keywords": ["running", "trail", "gps", "tracking", "fitness", "outdoor"],
+    "primaryColor": "#2E7D32",
+    "privacy": "unlisted",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2E7D32"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/your-project-id"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
+      "bundleIdentifier": "com.trailrun.app",
+      "buildNumber": "1",
+      "requireFullScreen": true,
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "associatedDomains": ["applinks:trailrun.app"],
       "infoPlist": {
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "TrailRun needs location access to track your running routes and record GPS data during your trail runs.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "TrailRun tracks your running routes and records GPS data during trail runs. Location access is essential for route recording and photo geotagging.",
         "NSLocationWhenInUseUsageDescription": "TrailRun needs location access to track your running routes and record GPS data during your trail runs.",
-        "NSLocationAlwaysUsageDescription": "TrailRun needs background location access to continue tracking your route even when the app is not in the foreground.",
-        "NSCameraUsageDescription": "TrailRun needs camera access to capture photos during your trail runs and geotag them with your current location.",
-        "NSPhotoLibraryUsageDescription": "TrailRun needs photo library access to save captured photos and access existing photos for your trail activities.",
-        "NSPhotoLibraryAddUsageDescription": "TrailRun needs permission to save photos you capture during trail runs to your photo library.",
-        "UIBackgroundModes": ["location"]
+        "NSLocationAlwaysUsageDescription": "TrailRun needs background location access to continue tracking your route even when the app is not in the foreground. This ensures your complete route is recorded during long trail runs.",
+        "NSCameraUsageDescription": "TrailRun captures photos during your trail runs and automatically geotags them with your current location to create memorable activity records.",
+        "NSPhotoLibraryUsageDescription": "TrailRun accesses your photo library to save captured trail photos and create activity summaries with your images.",
+        "NSPhotoLibraryAddUsageDescription": "TrailRun saves photos you capture during trail runs to your photo library for easy access and sharing.",
+        "NSMotionUsageDescription": "TrailRun uses motion data to improve GPS accuracy and detect when you pause during runs.",
+        "UIBackgroundModes": ["location", "background-fetch", "background-processing"],
+        "BGTaskSchedulerPermittedIdentifiers": ["com.trailrun.app.sync"],
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {}
+        }
       }
     },
     "android": {
+      "package": "com.trailrun.app",
+      "versionCode": 1,
+      "compileSdkVersion": 34,
+      "targetSdkVersion": 34,
+      "minSdkVersion": 26,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#2E7D32"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
+      "allowBackup": false,
+      "networkSecurityConfig": "./android-network-security-config.xml",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "trailrun.app"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -41,7 +86,11 @@
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "READ_MEDIA_IMAGES"
+        "READ_MEDIA_IMAGES",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "VIBRATE",
+        "SYSTEM_ALERT_WINDOW"
       ]
     },
     "web": {

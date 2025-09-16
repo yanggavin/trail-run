@@ -1,0 +1,52 @@
+name: Dependency Update
+
+on:
+  schedule:
+    - cron: '0 2 * * 1' # Weekly on Monday at 2 AM UTC
+  workflow_dispatch:
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: TrailRun/package-lock.json
+          
+      - name: Update dependencies
+        working-directory: TrailRun
+        run: |
+          npm update
+          npm audit fix --audit-level moderate
+          
+      - name: Run tests
+        working-directory: TrailRun
+        run: npm test
+        
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update dependencies'
+          title: 'chore: automated dependency updates'
+          body: |
+            ## Automated Dependency Updates
+            
+            This PR contains automated dependency updates:
+            - Updated npm packages to latest compatible versions
+            - Applied security fixes for moderate and higher vulnerabilities
+            - All tests are passing
+            
+            Please review the changes and merge if everything looks good.
+          branch: dependency-updates
+          delete-branch: true

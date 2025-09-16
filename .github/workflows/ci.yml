@@ -1,0 +1,150 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Test and Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: TrailRun/package-lock.json
+          
+      - name: Install dependencies
+        working-directory: TrailRun
+        run: npm ci
+        
+      - name: Type check
+        working-directory: TrailRun
+        run: npm run type-check
+        
+      - name: Lint
+        working-directory: TrailRun
+        run: npm run lint
+        
+      - name: Run tests
+        working-directory: TrailRun
+        run: npm run test:coverage
+        
+      - name: Security audit
+        working-directory: TrailRun
+        run: npm run security:audit
+        
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          directory: TrailRun/coverage
+          fail_ci_if_error: false
+
+  build-preview:
+    name: Build Preview
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: TrailRun/package-lock.json
+          
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          
+      - name: Install dependencies
+        working-directory: TrailRun
+        run: npm ci
+        
+      - name: Build preview
+        working-directory: TrailRun
+        run: eas build --profile preview --platform all --non-interactive
+
+  build-production:
+    name: Build Production
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: TrailRun/package-lock.json
+          
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          
+      - name: Install dependencies
+        working-directory: TrailRun
+        run: npm ci
+        
+      - name: Build production
+        working-directory: TrailRun
+        run: eas build --profile production --platform all --non-interactive
+        
+      - name: Submit to app stores
+        working-directory: TrailRun
+        run: |
+          eas submit --platform ios --latest --non-interactive
+          eas submit --platform android --latest --non-interactive
+        env:
+          EXPO_APPLE_ID: ${{ secrets.EXPO_APPLE_ID }}
+          EXPO_ASC_APP_ID: ${{ secrets.EXPO_ASC_APP_ID }}
+          EXPO_APPLE_TEAM_ID: ${{ secrets.EXPO_APPLE_TEAM_ID }}
+          EXPO_GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ${{ secrets.EXPO_GOOGLE_SERVICE_ACCOUNT_KEY_PATH }}
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'TrailRun'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          
+      - name: CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          languages: javascript

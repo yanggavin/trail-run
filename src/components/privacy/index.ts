@@ -1,0 +1,1 @@
+export { PrivacySettingsModal } from './PrivacySettingsModal';

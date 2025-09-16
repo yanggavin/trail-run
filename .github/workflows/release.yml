@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: TrailRun/package-lock.json
+          
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+          
+      - name: Install dependencies
+        working-directory: TrailRun
+        run: npm ci
+        
+      - name: Update version
+        working-directory: TrailRun
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          npm version $VERSION --no-git-tag-version
+          
+      - name: Run tests
+        working-directory: TrailRun
+        run: npm run test:coverage
+        
+      - name: Build production
+        working-directory: TrailRun
+        run: eas build --profile production --platform all --non-interactive --wait
+        
+      - name: Submit to App Store
+        working-directory: TrailRun
+        run: eas submit --platform ios --latest --non-interactive
+        env:
+          EXPO_APPLE_ID: ${{ secrets.EXPO_APPLE_ID }}
+          EXPO_ASC_APP_ID: ${{ secrets.EXPO_ASC_APP_ID }}
+          EXPO_APPLE_TEAM_ID: ${{ secrets.EXPO_APPLE_TEAM_ID }}
+          
+      - name: Submit to Google Play
+        working-directory: TrailRun
+        run: eas submit --platform android --latest --non-interactive
+        env:
+          EXPO_GOOGLE_SERVICE_ACCOUNT_KEY_PATH: ${{ secrets.EXPO_GOOGLE_SERVICE_ACCOUNT_KEY_PATH }}
+          
+      - name: Create deployment summary
+        run: |
+          echo "## 🚀 Release Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** ${GITHUB_REF#refs/tags/v}" >> $GITHUB_STEP_SUMMARY
+          echo "- **iOS:** Submitted to App Store" >> $GITHUB_STEP_SUMMARY
+          echo "- **Android:** Submitted to Google Play" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Time:** $(date)" >> $GITHUB_STEP_SUMMARY

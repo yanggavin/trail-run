@@ -1,5 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import { AuthConfig } from '../../types/auth';
+import { secureStorageService } from '../security/SecureStorageService';
+import { dataValidationService } from '../security/DataValidationService';
+import { secureCommunicationService } from '../security/SecureCommunicationService';
 
 export interface AuthTokens {
   accessToken: string;
@@ -59,6 +62,10 @@ class AuthService {
 
   async initialize(): Promise<void> {
     try {
+      // Initialize secure storage and communication services
+      await secureStorageService.initialize();
+      secureCommunicationService.initialize(this.config.apiEndpoint);
+      
       await this.loadStoredTokens();
       if (this.tokens && this.isTokenExpired()) {
         await this.refreshTokens();
@@ -70,35 +77,52 @@ class AuthService {
   }
 
   async signUp(request: SignUpRequest): Promise<{ userSub: string }> {
-    const response = await this.makeAuthRequest('signUp', request);
+    // Validate and sanitize input
+    const validatedRequest = dataValidationService.validateAuthInput(request);
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Sign up failed');
-    }
+    const response = await secureCommunicationService.request({
+      url: '/auth',
+      method: 'POST',
+      body: {
+        action: 'signUp',
+        ...validatedRequest,
+      },
+      validateResponse: true,
+    });
 
-    const result = await response.json();
-    return { userSub: result.userSub };
+    return { userSub: response.data.userSub };
   }
 
   async confirmSignUp(request: ConfirmSignUpRequest): Promise<void> {
-    const response = await this.makeAuthRequest('confirmSignUp', request);
+    // Validate and sanitize input
+    const validatedRequest = dataValidationService.validateAuthInput(request);
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Confirmation failed');
-    }
+    await secureCommunicationService.request({
+      url: '/auth',
+      method: 'POST',
+      body: {
+        action: 'confirmSignUp',
+        ...validatedRequest,
+      },
+      validateResponse: true,
+    });
   }
 
   async signIn(request: SignInRequest): Promise<AuthUser> {
-    const response = await this.makeAuthRequest('signIn', request);
+    // Validate and sanitize input
+    const validatedRequest = dataValidationService.validateAuthInput(request);
     
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Sign in failed');
-    }
+    const response = await secureCommunicationService.request({
+      url: '/auth',
+      method: 'POST',
+      body: {
+        action: 'signIn',
+        ...validatedRequest,
+      },
+      validateResponse: true,
+    });
 
-    const result = await response.json();
+    const result = response.data;
     
     if (result.challengeName) {
       throw new Error(`Authentication challenge required: ${result.challengeName}`);
@@ -122,7 +146,7 @@ class AuthService {
   }
 
   async signOut(): Promise<void> {
-    await this.clearStoredTokens();
+    await secureStorageService.clearAuthTokens();
     this.tokens = null;
     this.user = null;
   }
@@ -272,7 +296,7 @@ class AuthService {
 
   private async storeTokens(tokens: AuthTokens): Promise<void> {
     try {
-      await SecureStore.setItemAsync('auth_tokens', JSON.stringify(tokens));
+      await secureStorageService.storeAuthTokens(tokens);
     } catch (error) {
       console.error('Failed to store tokens:', error);
       throw new Error('Failed to store authentication tokens');
@@ -281,9 +305,9 @@ class AuthService {
 
   private async loadStoredTokens(): Promise<void> {
     try {
-      const storedTokens = await SecureStore.getItemAsync('auth_tokens');
+      const storedTokens = await secureStorageService.getAuthTokens();
       if (storedTokens) {
-        this.tokens = JSON.parse(storedTokens);
+        this.tokens = storedTokens;
         if (this.tokens?.idToken) {
           this.user = this.decodeIdToken(this.tokens.idToken);
         }
@@ -296,7 +320,7 @@ class AuthService {
 
   private async clearStoredTokens(): Promise<void> {
     try {
-      await SecureStore.deleteItemAsync('auth_tokens');
+      await secureStorageService.clearAuthTokens();
     } catch (error) {
       console.error('Failed to clear stored tokens:', error);
     }

@@ -151,3 +151,57 @@ export type {
   TrackingRecoveryData,
   AppCrashInfo 
 } from './background';
+
+// Security services
+export { 
+  SecureStorageService, 
+  secureStorageService,
+  EncryptedDatabaseService,
+  getEncryptedDatabaseService,
+  initializeEncryptedDatabase,
+  DataValidationService,
+  dataValidationService,
+  SecureCommunicationService,
+  secureCommunicationService,
+  PrivacyService,
+  privacyService,
+  ExifService,
+  exifService,
+  PrivacyPhotoService,
+  privacyPhotoService
+} from './security';
+
+export type { 
+  SecureStorageOptions,
+  EncryptedDatabaseConfig,
+  ValidationRule,
+  SanitizationOptions,
+  SecureRequestConfig,
+  SecureResponse,
+  PrivacySettings,
+  PrivacyLevel,
+  DataExportRequest,
+  DataDeletionRequest,
+  ExifData,
+  ExifStripOptions,
+  PrivacyPhotoOptions,
+  ShareablePhoto
+} from './security';
+
+// Monitoring services
+export { 
+  sentryService,
+  performanceMonitoringService,
+  userFeedbackService
+} from './monitoring';
+
+export type { 
+  PerformanceMetrics,
+  UserFeedback,
+  BatteryInfo,
+  MemoryInfo,
+  GpsMetrics,
+  BugReport,
+  FeatureRequest,
+  DeviceInfo
+} from './monitoring';

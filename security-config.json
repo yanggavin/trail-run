@@ -1,0 +1,50 @@
+{
+  "encryption": {
+    "database": {
+      "enabled": true,
+      "algorithm": "AES-256",
+      "keyDerivation": "PBKDF2"
+    },
+    "storage": {
+      "enabled": true,
+      "keychain": true,
+      "biometric": false
+    },
+    "communication": {
+      "tlsVersion": "1.2",
+      "certificatePinning": true,
+      "domains": [
+        "api.trailrun.app",
+        "amazonaws.com"
+      ]
+    }
+  },
+  "permissions": {
+    "location": {
+      "required": true,
+      "background": true,
+      "precision": "fine",
+      "rationale": "Required for GPS tracking during trail runs"
+    },
+    "camera": {
+      "required": true,
+      "rationale": "Required to capture photos during trail runs"
+    },
+    "storage": {
+      "required": true,
+      "rationale": "Required to save photos and activity data"
+    }
+  },
+  "privacy": {
+    "dataMinimization": true,
+    "defaultPrivate": true,
+    "exifStripping": true,
+    "analyticsOptIn": true
+  },
+  "security": {
+    "rootDetection": false,
+    "debugDetection": false,
+    "tamperDetection": false,
+    "obfuscation": false
+  }
+}

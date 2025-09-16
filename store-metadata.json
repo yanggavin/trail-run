@@ -1,0 +1,60 @@
+{
+  "appName": "TrailRun",
+  "shortDescription": "GPS tracking for trail runners with photo capture",
+  "fullDescription": "TrailRun is the ultimate GPS tracking app designed specifically for trail runners. Record your routes with precision, capture geotagged photos during your runs, and generate comprehensive activity summaries called 'Routine Records'.\n\nKey Features:\n• Accurate GPS tracking with background recording\n• Automatic pause/resume detection\n• Photo capture with location tagging\n• Interactive route maps with photo markers\n• Detailed statistics and elevation profiles\n• Offline functionality with cloud sync\n• Privacy-focused with encrypted local storage\n• Battery-optimized for long trail runs\n\nWhether you're exploring new trails or training for your next ultra, TrailRun helps you document every step of your journey with beautiful, shareable activity summaries.",
+  "keywords": [
+    "running",
+    "trail running",
+    "GPS tracking",
+    "fitness",
+    "outdoor",
+    "hiking",
+    "route recording",
+    "photo mapping",
+    "activity tracking",
+    "trail maps"
+  ],
+  "category": "Health & Fitness",
+  "contentRating": "4+",
+  "supportUrl": "https://trailrun.app/support",
+  "privacyPolicyUrl": "https://trailrun.app/privacy",
+  "websiteUrl": "https://trailrun.app",
+  "screenshots": {
+    "ios": {
+      "6.5": [
+        "screenshot-ios-6.5-1.png",
+        "screenshot-ios-6.5-2.png",
+        "screenshot-ios-6.5-3.png",
+        "screenshot-ios-6.5-4.png",
+        "screenshot-ios-6.5-5.png"
+      ],
+      "5.5": [
+        "screenshot-ios-5.5-1.png",
+        "screenshot-ios-5.5-2.png",
+        "screenshot-ios-5.5-3.png",
+        "screenshot-ios-5.5-4.png",
+        "screenshot-ios-5.5-5.png"
+      ],
+      "12.9": [
+        "screenshot-ipad-12.9-1.png",
+        "screenshot-ipad-12.9-2.png"
+      ]
+    },
+    "android": {
+      "phone": [
+        "screenshot-android-phone-1.png",
+        "screenshot-android-phone-2.png",
+        "screenshot-android-phone-3.png",
+        "screenshot-android-phone-4.png",
+        "screenshot-android-phone-5.png"
+      ],
+      "tablet": [
+        "screenshot-android-tablet-1.png",
+        "screenshot-android-tablet-2.png"
+      ]
+    }
+  },
+  "releaseNotes": {
+    "1.0.0": "Initial release of TrailRun with GPS tracking, photo capture, and activity summaries."
+  }
+}
